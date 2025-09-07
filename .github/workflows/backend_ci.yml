@@ -1,25 +1,22 @@
-# week07/.github/workflows/backend_ci.yml
-
 name: Backend CI - Test, Build and Push Images to ACR
 
-# Trigger the workflow on pushes to the 'main' branch or manually
 on:
-  workflow_dispatch:
-
-  push:
+  workflow_dispatch:   # Manual trigger
+  push:                # Trigger on pushes to main branch
     branches:
       - main
     paths:
       - 'backend/**'
       - '.github/workflows/backend_ci.yml'
 
-# Define global environment variables
 env:
+  # Full ACR login server (e.g., dhanushweek07acr.azurecr.io)
   ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+  # Unique tag so images don’t overwrite each other
   IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
 
 jobs:
-  # Job 1: Run tests and linting for all backend services
+  # Job 1: Run tests and linting
   test_and_lint_backends:
     runs-on: ubuntu-latest
 
@@ -44,13 +41,13 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: orders
-        ports:
-          - 5433:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5433:5432
 
     steps:
       - name: Checkout repository
@@ -78,8 +75,7 @@ jobs:
           POSTGRES_DB: products
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        run: |
-          pytest tests --maxfail=1 --disable-warnings -q
+        run: pytest tests --maxfail=1 --disable-warnings -q
 
       - name: Run order_service tests
         working-directory: backend/order_service
@@ -89,8 +85,7 @@ jobs:
           POSTGRES_DB: orders
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-        run: |
-          pytest tests --maxfail=1 --disable-warnings -q
+        run: pytest tests --maxfail=1 --disable-warnings -q
 
   # Job 2: Build and Push Docker Images
   build_and_push_images:
@@ -101,17 +96,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Login to Azure Container Registry using admin credentials
+      # 🔑 Correct login using ACR secrets
       - name: Login to Azure Container Registry
         run: |
-          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u "${{ secrets.ACR_USERNAME }}" --password-stdin
 
+      # 🔨 Build and Push Product Service
       - name: Build and Push Product Service Image
         run: |
-          docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:latest ./backend/product_service/
-          docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:${{ env.IMAGE_TAG }} ./backend/product_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:${{ env.IMAGE_TAG }}
 
+      # 🔨 Build and Push Order Service
       - name: Build and Push Order Service Image
         run: |
-          docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:latest ./backend/order_service/
-          docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:${{ env.IMAGE_TAG }} ./backend/order_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:${{ env.IMAGE_TAG }}
