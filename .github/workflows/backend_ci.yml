@@ -15,7 +15,7 @@ on:
     paths: # Only trigger if changes are in backend directories
       - 'backend/**'
       - '.github/workflows/backend_ci.yml' # Trigger if this workflow file changes
-# Triggering workflow for SIT722 Task 7.1P
+# Triggering workflow for Task 7.1P
 # Define global environment variables that can be used across jobs
 env:
   # ACR Login Server (e.g., myregistry.azurecr.io)
