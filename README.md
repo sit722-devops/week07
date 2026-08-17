@@ -1,157 +1,150 @@
-# Week 06 – Example 1: Provisioning Azure Infrastructure Using Terraform
+# Week 07 – Continuous Integration with GitHub Actions
 
-## Objective
+In this example, we extend the application from **Week 06 – Example 01** by introducing a Continuous Integration (CI) pipeline using GitHub Actions.
 
-In this example, you will provision the Azure infrastructure required to deploy the KoalaTech University microservices application using **Terraform**.
+The CI pipeline will:
 
-Instead of manually creating Azure resources through the Azure Portal or Azure CLI, you will define the infrastructure as code and allow Terraform to provision the required resources automatically.
+1. Run automated tests for all backend services.
+2. Continue only if all tests pass.
+3. Build Docker images for all backend services and the frontend.
+4. Authenticate with Microsoft Azure.
+5. Push the Docker images to Azure Container Registry (ACR).
 
-After the infrastructure has been created successfully, you will deploy the application by following a similar process to that used in __Week 05 – Example 2__.
+---
+## 1. Fork the Repository
 
-## Learning Outcomes
+Fork the provided repository to your own GitHub account.
 
-After completing this example, you will be able to:
-
-- Explain the concept of Infrastructure as Code (IaC).
-- Configure the AzureRM Terraform provider.
-- Create reusable Terraform configurations using variables.
-- Provision Azure resources using Terraform.
-- Validate and apply Terraform configurations.
-- View Terraform outputs.
-- Destroy Azure infrastructure using Terraform.
-- Deploy an existing Kubernetes application to Terraform-provisioned infrastructure.
-
-
-## System Architecture
-
-The application is deployed to **Azure Kubernetes Service (AKS)** and consists of six application components and five PostgreSQL databases. Each microservice has its own dedicated database to ensure service isolation and independent data management.
-
-The React frontend communicates with an Nginx reverse proxy, which routes incoming requests to the appropriate backend microservice using Kubernetes ClusterIP services. All backend services communicate with their respective PostgreSQL databases through the Kubernetes internal network. Each database stores its data on an Azure managed disk using a Persistent Volume Claim (PVC), ensuring data persists even if a pod is restarted.
-
-The frontend is exposed externally using a Kubernetes **LoadBalancer** service, allowing users to access the application through the public IP address assigned by Azure.
-
-> **Architecture Diagram**
->
-> ![AKS Architecture](architecture.png)
-
-
-## Prerequisites
-
-Before starting this example, ensure the following software is installed:
-
-- Terraform
-- Azure CLI
-- Docker Desktop
-- kubectl
-- Git
-- Python 3.12 or later
-
-Verify your installation using:
+After forking the repository, clone your fork to your local machine.
 
 ```bash
-terraform --version
-az --version
-docker --version
-kubectl version --client
-python --version
-git --version
+git clone <YOUR-FORKED-REPOSITORY-URL>
 ```
 
-If all commands return version information without errors, your development environment is ready for this example.
-
-
-## Running Unit Tests
-
-Before deploying the application, verify that each microservice is functioning correctly by running its unit tests. Repeat the steps as done in `week05/example02`.
-
-## Running the Application with Docker Compose
-
-Before deploying the application to Kubernetes, verify that the complete system is functioning correctly using Docker Compose.
-
-## Configure Terraform Variables
-
-Before creating the infrastructure, open the `terraform.tfvars` file and update the values to match your Azure environment.
-
-At a minimum, update the following variables:
-
-- Azure Container Registry name
-- Azure Storage Account name
-- AKS cluster name
-
-> **Important:** Azure Storage Account names and Azure Container Registry names must be globally unique.
-
-## Provision Azure Infrastructure
-
-### Step 1: Initialize, Plan and Apply Terraform
-
-Initialize the Terraform working directory, review the execution plan, and apply the configuration as demonstrated in the seminar. 
-
-Terraform will create:
-
-- Resource Group
-- Azure Kubernetes Service (AKS)
-- Azure Container Registry (ACR)
-- Azure Storage Account
-- Two Blob Storage containers:
-  - `student-profile-photo`
-  - `lecturer-profile-photo`
-- Required role assignments between AKS and ACR
-
-### Step 2: Verify the Infrastructure
-
-Verify that all Azure resources have been created successfully using either:
-
-- Azure Portal
-- Azure CLI, i.e., using the command:
-
-  ```bash
-  az resource list \
-    --resource-group <resource-group-name> \
-    -o table
-  ```
-
-## Deploy the Application
-
-Once the infrastructure has been created successfully, deploy the application using a modified version of the process from __Week 05 – Example 2__.
-
-Before starting the deployment:
-
-1. Create and populate the `.env` files in the `student-service` and `lecturer-service` directories with the `AZURE_STORAGE_CONNECTION_STRING` value.
-
-    The connection string can be obtained from the Azure Portal or by using the command:
-    
-    ```bash
-    az storage account show-connection-string \
-      --name <storage-account-name> \
-      --resource-group <resource-group-name> \
-      --query connectionString \
-      --output tsv
-    ```
-2. Build the Docker images for each service.
-
-3. Tag and push the images to the Azure Container Registry (ACR) created by Terraform.
- 
-4. In the `./kubernetes` directory, update the _Kubernetes deployment manifests_ for both: 
-    * The _application secret_ for the `AZURE_STORAGE_CONNECTION_STRING` field; and
-    * The _container repository_ references so they point to your Azure Container Registry (i.e., the `<azure-container-registry-url>` field).
- 
-5. Deploy the application using the process described in __Week 05 – Example 2__.
-
-
-## Cleaning Up Azure Resources
-
-When you have finished the practical, attempt to destroy all Azure resources created by Terraform:
+Navigate to the project directory.
 
 ```bash
-terraform destroy
+cd <PROJECT-DIRECTORY>
+```
+---
+
+## 2. Create the Required Azure Infrastructure
+
+Make sure the Azure Container Registry has been successfully created before configuring the CI pipeline.
+
+---
+
+## 3. Create a Service Principal
+
+GitHub Actions requires permission to authenticate with Azure and push Docker images to Azure Container Registry.
+
+Create a Microsoft Entra application and service principal by following the official Microsoft documentation:
+
+(https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal)[https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal
+]
+
+When creating the service principal, make sure you record the following values:
+
+- Application (Client) ID
+- Directory (Tenant) ID
+- Client Secret Value
+- Azure Subscription ID
+
+> **Important:** Copy the **Client Secret Value** when it is created. The secret value is displayed only once.
+
+---
+
+## 4. Assign ACR Permission
+
+The service principal must have permission to push Docker images to Azure Container Registry.
+
+In the Azure Portal:
+
+1. Open your **Azure Container Registry**.
+2. Go to **Access control (IAM)**.
+3. Select **Add role assignment**.
+4. Assign the appropriate role that allows the service principal to push images to the registry.
+5. Select the service principal created in the previous step.
+6. Complete the role assignment.
+
+---
+
+## 6. Create GitHub Repository Secret
+
+Open your GitHub repository and go to:
+
+**Settings → Secrets and variables → Actions → Secrets**
+
+Create the following **Repository Secret**:
+
+```text
+AZURE_CREDENTIALS
 ```
 
-Review the execution plan and type "_yes_" when prompted.
+Use the following structure:
 
-> __NOTE on CloudLabs Limitation__: Terraform may report errors when destroying Azure role assignments because student accounts do not have permission to delete RBAC assignments. This does not necessarily indicate that the deployment failed. Verify resource cleanup using the Azure Portal or `az resource list`. If you experience this, try removing the resource from the Terraform State __before__ destroy:
-> ```bash
-> terraform state rm azurerm_role_assignment.acr_pull
-> 
-> terraform destroy
-> ```
-> Terraform will no longer attempt to delete the role assignment. The role assignment will be automatically removed when the _AKS cluster_ is deleted. 
+```json
+{
+  "clientId": "YOUR_CLIENT_ID",
+  "clientSecret": "YOUR_CLIENT_SECRET",
+  "subscriptionId": "YOUR_SUBSCRIPTION_ID",
+  "tenantId": "YOUR_TENANT_ID"
+}
+```
+
+Replace each value with the information from your Azure service principal and subscription.
+
+> Never commit Azure credentials or client secrets to the GitHub repository.
+
+---
+
+## 6. Create GitHub Repository Variables
+
+Go to:
+
+**Settings → Secrets and variables → Actions → Variables**
+
+Create the following **Repository Variables**:
+
+```text
+ACR_NAME
+```
+
+Set the value to the name of your Azure Container Registry.
+
+Create another variable:
+
+```text
+ACR_LOGIN_SERVER
+```
+
+Set the value to the login server of your Azure Container Registry.
+
+---
+
+## 7. Run the CI Pipeline
+
+Run the workflow manually from the **Actions** section of the GitHub repository.
+
+Alteernatively, Make some changes in code and push the changes.
+
+Monitor the workflow and confirm that all backend tests pass before the Docker image build and push jobs begin.
+
+---
+
+## 8. Verify Images in Azure Container Registry
+
+After the CI pipeline completes successfully:
+
+1. Open the Azure Portal.
+2. Open your Azure Container Registry.
+3. Select **Repositories**.
+4. Verify that all application Docker images have been pushed successfully.
+
+The CI pipeline is complete when all tests pass and all required Docker images are available in ACR.
+
+---
+
+## 9. Delete All Resources
+
+Delete all Azure resources created for this example after completing the practical.
