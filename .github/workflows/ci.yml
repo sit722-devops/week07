@@ -108,8 +108,8 @@ jobs:
     needs:
       - backend-test
 
-    # Build and push only when code is pushed to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Build and push when code is pushed to main or manually triggered
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     strategy:
       fail-fast: false
