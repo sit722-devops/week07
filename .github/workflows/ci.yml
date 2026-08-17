@@ -1,9 +1,10 @@
 name: CI Pipeline
 
 on:
-  # Manual trigger
+  # Manual trigger for the workflow
   workflow_dispatch:
-    
+
+
 jobs:
 
   # =========================================================
@@ -20,18 +21,23 @@ jobs:
         include:
           - service: user-service
             database: users
+            port: 5433
 
           - service: student-service
             database: students
+            port: 5434
 
           - service: lecturer-service
             database: lecturers
+            port: 5435
 
           - service: course-service
             database: courses
+            port: 5436
 
           - service: enrollment-service
             database: enrollments
+            port: 5437
 
     services:
       postgres:
@@ -43,7 +49,7 @@ jobs:
           POSTGRES_DB: ${{ matrix.database }}
 
         ports:
-          - 5432:5432
+          - ${{ matrix.port }}:5432
 
         options: >-
           --health-cmd="pg_isready -U postgres -d ${{ matrix.database }}"
@@ -56,11 +62,10 @@ jobs:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ${{ matrix.database }}
       POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: ${{ matrix.port }}
 
       JWT_SECRET_KEY: koalatech-ci-test-secret
       JWT_ALGORITHM: HS256
-
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
 
       DEFAULT_ADMIN_USERNAME: admin
@@ -71,6 +76,7 @@ jobs:
       AZURE_STORAGE_CONTAINER_NAME: ""
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -79,14 +85,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Upgrade pip
-        working-directory: ${{ matrix.service }}
-        run: |
-          python -m pip install --upgrade pip
-
       - name: Install dependencies
         working-directory: ${{ matrix.service }}
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run tests
@@ -96,17 +98,17 @@ jobs:
 
 
   # =========================================================
-  # Build and Push Images
+  # Build and Push Docker Images
   # =========================================================
   build-and-push:
     name: Build and Push ${{ matrix.image }}
     runs-on: ubuntu-latest
 
+    # All backend tests must pass before this job starts
     needs:
       - backend-test
 
-    # Do not push images for pull requests.
-    # Push only after tests pass on main.
+    # Build and push only when code is pushed to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     strategy:
@@ -133,6 +135,7 @@ jobs:
             image: koalatech-enrollment-service
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
