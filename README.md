@@ -1,129 +1,157 @@
-# Week 04 Example 02: Full-Stack Microservice Deployment with Kubernetes
+# Week 06 – Example 1: Provisioning Azure Infrastructure Using Terraform
 
-## Introduction
+## Objective
 
-This example extends previous weeks' concepts by demonstrating the deployment of a multi-service application (frontend and two backend microservices) onto a local Kubernetes cluster, typically running via Docker Desktop. This setup provides hands-on experience with container orchestration, configuration management, and service discovery within a Kubernetes environment.
+In this example, you will provision the Azure infrastructure required to deploy the KoalaTech University microservices application using **Terraform**.
 
-You will learn how to:
+Instead of manually creating Azure resources through the Azure Portal or Azure CLI, you will define the infrastructure as code and allow Terraform to provision the required resources automatically.
 
-- Build Docker images for each component.
-- Configure Kubernetes `ConfigMaps` for non-sensitive data and `Secrets` for sensitive information.
-- Apply Kubernetes YAML manifests to deploy `Deployments` and `Services`.
-- Verify the health and status of your deployed applications.
-- Clean up all Kubernetes resources after testing.
+After the infrastructure has been created successfully, you will deploy the application by following a similar process to that used in __Week 05 – Example 2__.
 
-## Project Setup
+## Learning Outcomes
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/durgeshsamariya/sit722_software_deployment_and_operation_code.git
-    ```
-2.  **Navigate to the example directory:**
-    ```bash
-    cd sit722_software_deployment_and_operation_code/python/week04/example-2
-    ```
+After completing this example, you will be able to:
 
-## 1. Building Docker Images
+- Explain the concept of Infrastructure as Code (IaC).
+- Configure the AzureRM Terraform provider.
+- Create reusable Terraform configurations using variables.
+- Provision Azure resources using Terraform.
+- Validate and apply Terraform configurations.
+- View Terraform outputs.
+- Destroy Azure infrastructure using Terraform.
+- Deploy an existing Kubernetes application to Terraform-provisioned infrastructure.
 
-Before deploying to Kubernetes, we need to build the Docker images for our frontend and microservices. Kubernetes on Docker Desktop can often access images built locally by Docker if they are tagged correctly. We'll use `docker compose build --no-cache` for convenience, which reads your `docker-compose.yml` to build the images.
 
-1.  **Ensure you are in the `week04/example-2` directory.**
+## System Architecture
 
-2.  **Build the images:**
+The application is deployed to **Azure Kubernetes Service (AKS)** and consists of six application components and five PostgreSQL databases. Each microservice has its own dedicated database to ensure service isolation and independent data management.
 
-    ```bash
-    docker compose build --no-cache
-    ```
+The React frontend communicates with an Nginx reverse proxy, which routes incoming requests to the appropriate backend microservice using Kubernetes ClusterIP services. All backend services communicate with their respective PostgreSQL databases through the Kubernetes internal network. Each database stores its data on an Azure managed disk using a Persistent Volume Claim (PVC), ensuring data persists even if a pod is restarted.
 
-## 2. Kubernetes Configuration (ConfigMaps & Secrets)
+The frontend is exposed externally using a Kubernetes **LoadBalancer** service, allowing users to access the application through the public IP address assigned by Azure.
 
-Kubernetes `ConfigMaps` and `Secrets` are used to manage configuration data and sensitive information separately from your application code and Docker images. You will likely need to adjust these files based on your specific database connection details or other configuration.
+> **Architecture Diagram**
+>
+> ![AKS Architecture](architecture.png)
 
-### 2.1. Secrets (`secrets.yaml`)
 
-This file contains non-sensitive configuration data, such as database names or API endpoints.
+## Prerequisites
 
-1.  **Open `secrets.yaml`**.
+Before starting this example, ensure the following software is installed:
 
-2.  **Encode your actual password to Base64:**
+- Terraform
+- Azure CLI
+- Docker Desktop
+- kubectl
+- Git
+- Python 3.12 or later
 
-- **Linux/macOS:**
+Verify your installation using:
+
+```bash
+terraform --version
+az --version
+docker --version
+kubectl version --client
+python --version
+git --version
+```
+
+If all commands return version information without errors, your development environment is ready for this example.
+
+
+## Running Unit Tests
+
+Before deploying the application, verify that each microservice is functioning correctly by running its unit tests. Repeat the steps as done in `week05/example02`.
+
+## Running the Application with Docker Compose
+
+Before deploying the application to Kubernetes, verify that the complete system is functioning correctly using Docker Compose.
+
+## Configure Terraform Variables
+
+Before creating the infrastructure, open the `terraform.tfvars` file and update the values to match your Azure environment.
+
+At a minimum, update the following variables:
+
+- Azure Container Registry name
+- Azure Storage Account name
+- AKS cluster name
+
+> **Important:** Azure Storage Account names and Azure Container Registry names must be globally unique.
+
+## Provision Azure Infrastructure
+
+### Step 1: Initialize, Plan and Apply Terraform
+
+Initialize the Terraform working directory, review the execution plan, and apply the configuration as demonstrated in the seminar. 
+
+Terraform will create:
+
+- Resource Group
+- Azure Kubernetes Service (AKS)
+- Azure Container Registry (ACR)
+- Azure Storage Account
+- Two Blob Storage containers:
+  - `student-profile-photo`
+  - `lecturer-profile-photo`
+- Required role assignments between AKS and ACR
+
+### Step 2: Verify the Infrastructure
+
+Verify that all Azure resources have been created successfully using either:
+
+- Azure Portal
+- Azure CLI, i.e., using the command:
 
   ```bash
-      echo -n "your_strong_password" | base64
+  az resource list \
+    --resource-group <resource-group-name> \
+    -o table
   ```
 
-- **Windows (PowerShell):**
+## Deploy the Application
 
-  ```powershell
-  [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes("your_strong_password"))
-  ```
+Once the infrastructure has been created successfully, deploy the application using a modified version of the process from __Week 05 – Example 2__.
 
-  Replace `"your_strong_password"` with your password.
+Before starting the deployment:
 
-## 3. Deploying to Kubernetes
+1. Create and populate the `.env` files in the `student-service` and `lecturer-service` directories with the `AZURE_STORAGE_CONNECTION_STRING` value.
 
-Once your Docker images are built and your Kubernetes YAML configuration files (Deployments, Services, ConfigMaps, Secrets) are ready, you can deploy them to your local Kubernetes cluster.
-
-1.  **Ensure your Docker Desktop Kubernetes cluster is running.** You can verify this by checking the Docker Desktop application icon.
-
-2.  **Ensure you are in the `week04/example-2/k8s` directory** which contains all your Kubernetes YAML files.
-
-3.  **Apply all Kubernetes manifests:**
+    The connection string can be obtained from the Azure Portal or by using the command:
+    
     ```bash
-    kubectl apply -f .
+    az storage account show-connection-string \
+      --name <storage-account-name> \
+      --resource-group <resource-group-name> \
+      --query connectionString \
+      --output tsv
     ```
-    This command tells `kubectl` to find all YAML files in the current directory (`.`) and apply them to the Kubernetes cluster.
+2. Build the Docker images for each service.
 
-## 4. Verifying Deployment
+3. Tag and push the images to the Azure Container Registry (ACR) created by Terraform.
+ 
+4. In the `./kubernetes` directory, update the _Kubernetes deployment manifests_ for both: 
+    * The _application secret_ for the `AZURE_STORAGE_CONNECTION_STRING` field; and
+    * The _container repository_ references so they point to your Azure Container Registry (i.e., the `<azure-container-registry-url>` field).
+ 
+5. Deploy the application using the process described in __Week 05 – Example 2__.
 
-After applying the manifests, it's essential to verify that all components are running as expected.
 
-1.  **Check the status of your Pods:**
+## Cleaning Up Azure Resources
 
-    ```bash
-    kubectl get pods
-    ```
+When you have finished the practical, attempt to destroy all Azure resources created by Terraform:
 
-    You should see pods for `postgres-db`, `product-service`, `order-service`, and `frontend` in a `Running` state. It might take a moment for all of them to start.
+```bash
+terraform destroy
+```
 
-2.  **Check the status of your Services:**
+Review the execution plan and type "_yes_" when prompted.
 
-    ```bash
-    kubectl get services
-    ```
-
-    You should see services like `product-service`, `order-service`, `frontend-service`, and `postgres-db`. Pay attention to the `TYPE` (e.g., `ClusterIP`, `NodePort`) and the `PORTS`. For `NodePort` services, you will see a public port listed (e.g., `80:30000/TCP`).
-
-## 5. Accessing the Applications
-
-To access your deployed applications from your local machine:
-
-1.  **Frontend (Product Catalog):**
-
-    - Find the `NodePort` assigned to your `frontend-service` (e.g., from `kubectl get services`). It's `30002`.
-    - Open your web browser and go to `http://localhost:30002`.
-    - The frontend will communicate with the backend services internally within the Kubernetes cluster.
-
-2.  **Backend API (Product Service - Swagger UI):**
-
-    - Find the `NodePort` assigned to your `product-service`.
-    - Open your web browser and go to `http://localhost:30000/docs`.
-
-3.  **Backend API (Order Service - Swagger UI):**
-    - Find the `NodePort` assigned to your `order-service`.
-    - Open your web browser and go to `http://localhost:30001/docs`.
-
-You can now interact with the frontend to add and view products/orders, which will communicate through the Kubernetes services to your backend microservices and database.
-
-## 6. Cleaning Up Kubernetes Deployments
-
-To stop and remove all services, deployments, and associated Docker resources created by Kubernetes, use the `kubectl delete` command.
-
-1.  **Ensure you are in the `week04/example-2/k8s` directory.**
-
-2.  **Delete all Kubernetes manifests:**
-    ```bash
-    kubectl delete -f .
-    ```
-    This command will delete all resources defined in the YAML files within the current directory. This is crucial for a clean slate before your next deployment or when you are done with the example.
+> __NOTE on CloudLabs Limitation__: Terraform may report errors when destroying Azure role assignments because student accounts do not have permission to delete RBAC assignments. This does not necessarily indicate that the deployment failed. Verify resource cleanup using the Azure Portal or `az resource list`. If you experience this, try removing the resource from the Terraform State __before__ destroy:
+> ```bash
+> terraform state rm azurerm_role_assignment.acr_pull
+> 
+> terraform destroy
+> ```
+> Terraform will no longer attempt to delete the role assignment. The role assignment will be automatically removed when the _AKS cluster_ is deleted. 
