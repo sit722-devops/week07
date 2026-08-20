@@ -126,7 +126,7 @@ jobs:
             image: koalatech-student-service
 
           - service: lecturer-service
-            image: koalatech-lecture-service
+            image: koalatech-lecturer-service
 
           - service: course-service
             image: koalatech-course-service
