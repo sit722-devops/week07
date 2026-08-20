@@ -69,7 +69,7 @@ In the Azure Portal:
 
 ---
 
-## 6. Create GitHub Repository Secret
+## 5. Create GitHub Repository Secret
 
 Open your GitHub repository and go to:
 
