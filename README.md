@@ -38,10 +38,10 @@ Make sure the Azure Container Registry has been successfully created before conf
 
 GitHub Actions requires permission to authenticate with Azure and push Docker images to Azure Container Registry.
 
-Create a Microsoft Entra application and service principal by following the official Microsoft documentation:
+Create a _Microsoft Entra application and service principal_ by following the official Microsoft documentation:
 
-(https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal)[https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal
-]
+[https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal](https://learn.microsoft.com/en-us/entra/identity-platform/howto-create-service-principal-portal
+)
 
 When creating the service principal, make sure you record the following values:
 
