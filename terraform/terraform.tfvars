@@ -1,5 +1,5 @@
 location            = "Australia East"
-resource_group_name = "koalatech-week06-rg"
+resource_group_name = "koalatech-week07-rg"
 
 # Replace with a unique name for your Azure Container Registry 
 acr_name             = "UNIQUE_ACR_NAME"
