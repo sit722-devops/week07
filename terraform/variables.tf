@@ -34,42 +34,12 @@ variable "storage_account_name" {
     }
 }
 
-variable "aks_cluster_name" {
-    description = "Name of the Azure Kubernetes Service cluster"
-    type        = string
-}
-
-variable "aks_dns_prefix" {
-    description = "DNS prefix used by the AKS cluster"
-    type        = string
-}
-
-variable "aks_node_count" {
-    description = "Number of nodes in the default AKS node pool"
-    type        = number
-    default     = 2
-
-    validation {
-        condition     = var.aks_node_count >= 1
-        error_message = "The AKS node count must be at least 1."
-    }
-}
-
-variable "aks_node_vm_size" {
-    description = "Virtual machine size used by the AKS nodes"
-    type        = string
-    default     = "Standard_D2s_v3"
-}
-
 variable "environment" {
     description = "Environment name applied to resource tags"
     type        = string
     default     = "development"
 }
 
-variable "kubernetes_version" {
-    default = "1.36.1"
-}
 
 variable "tags" {
     description = "Tags applied to Azure resources"
