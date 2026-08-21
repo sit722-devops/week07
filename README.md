@@ -13,7 +13,7 @@ The CI pipeline will:
 ---
 ## 1. Fork the Repository
 
-Fork the provided repository to your own GitHub account.
+Log into GitHub, then go to this weeks repository [https://github.com/sit722-devops/week07](https://github.com/sit722-devops/week07) and __Fork__ this into your account.
 
 After forking the repository, clone your fork to your local machine.
 
@@ -30,13 +30,13 @@ cd <PROJECT-DIRECTORY>
 
 ## 2. Create the Required Azure Infrastructure
 
-Make sure the Azure Container Registry has been successfully created before configuring the CI pipeline.
+Make sure the _Azure Container Registry_ has been successfully created before configuring the CI pipeline.
 
 ---
 
 ## 3. Create a Service Principal
 
-GitHub Actions requires permission to authenticate with Azure and push Docker images to Azure Container Registry.
+_GitHub Actions_ requires permission to authenticate with Azure and push Docker images to Azure Container Registry.
 
 Create a _Microsoft Entra application and service principal_ by following the official Microsoft documentation:
 
@@ -63,7 +63,7 @@ In the Azure Portal:
 1. Open your **Azure Container Registry**.
 2. Go to **Access control (IAM)**.
 3. Select **Add role assignment**.
-4. Assign the appropriate role that allows the service principal to push images to the registry.
+4. Assign the appropriate role that allows the service principal to push images to the registry (i.e., `Contributor`).
 5. Select the service principal created in the previous step.
 6. Complete the role assignment.
 
