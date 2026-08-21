@@ -15,6 +15,8 @@ The CI pipeline will:
 
 Log into GitHub, then go to this weeks repository [https://github.com/sit722-devops/week07](https://github.com/sit722-devops/week07) and __Fork__ this into your account.
 
+![Fork Repository](github-fork.png)
+
 After forking the repository, clone your fork to your local machine.
 
 ```bash
