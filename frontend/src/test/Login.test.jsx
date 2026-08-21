@@ -51,19 +51,17 @@ describe("Login page", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole("textbox", {
-        name: /password/i,
-      })
+      screen.getByLabelText(/password/i)
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole("button", {
-        name: "Login",
+        name: /login/i,
       })
     ).toBeInTheDocument();
   });
 
-  it("submits email and password", async () => {
+  it("submits username and password", async () => {
     authService.login.mockResolvedValue({
       access_token:
         "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkB0ZXN0LmNvbSIsInJvbGUiOiJhZG1pbiJ9.test",
@@ -73,8 +71,8 @@ describe("Login page", () => {
 
     fireEvent.change(
       screen.getByRole("textbox", {
-  name: /username/i,
-}),
+        name: /username/i,
+      }),
       {
         target: {
           value: "admin",
@@ -83,9 +81,7 @@ describe("Login page", () => {
     );
 
     fireEvent.change(
-      screen.getByRole("textbox", {
-  name: /password/i,
-}),
+      screen.getByLabelText(/password/i),
       {
         target: {
           value: "password123",
@@ -95,7 +91,7 @@ describe("Login page", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Login",
+        name: /login/i,
       })
     );
 
@@ -103,7 +99,7 @@ describe("Login page", () => {
       expect(
         authService.login
       ).toHaveBeenCalledWith({
-        email: "admin@test.com",
+        username: "admin",
         password: "password123",
       });
     });
@@ -132,9 +128,7 @@ describe("Login page", () => {
     );
 
     fireEvent.change(
-      screen.getByRole("textbox", {
-        name: /password/i,
-      }),
+      screen.getByLabelText(/password/i),
       {
         target: {
           value: "wrongpassword",
@@ -144,7 +138,7 @@ describe("Login page", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Login",
+        name: /login/i,
       })
     );
 

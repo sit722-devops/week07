@@ -65,9 +65,12 @@ describe("LecturerList", () => {
         first_name: "Jane",
         last_name: "Smith",
         email: "jane@test.com",
-        department: "Computer Science",
-        specialisation: "Cloud Computing",
-        status: "active",
+        phone: null,
+        school: "Computer Science",
+        designation: "Cloud Computing",
+        office_location: null,
+        employment_status: "active",
+        profile_photo_url: null,
       },
     ]);
 
@@ -89,6 +92,14 @@ describe("LecturerList", () => {
 
     expect(
       screen.getByText("Computer Science")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Cloud Computing")
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("active")
     ).toBeInTheDocument();
   });
 
